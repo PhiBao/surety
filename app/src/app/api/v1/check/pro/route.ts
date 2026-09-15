@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OKXFacilitatorClient } from "@okxweb3/x402-core";
+import { checkUrl } from "@/lib/net";
 
 /**
  * Paid x402 tier for the Surety checker (A2MCP paid-endpoint form).
@@ -82,12 +83,7 @@ function challenge(url: string) {
 async function runCheck(target: string) {
   const started = Date.now();
   try {
-    const res = await fetch(target, {
-      method: "HEAD",
-      redirect: "follow",
-      signal: AbortSignal.timeout(8000),
-      headers: { "user-agent": "surety-checker/1.0" },
-    });
+    const res = await checkUrl(target);
     return { ok: res.ok, status: res.status, url: target, latencyMs: Date.now() - started };
   } catch (e) {
     return { ok: false, url: target, error: (e as Error).message, latencyMs: Date.now() - started };

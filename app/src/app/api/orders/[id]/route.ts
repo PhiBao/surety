@@ -28,6 +28,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (!bid) return NextResponse.json({ error: "Bid not found." }, { status: 404 });
     order.status = "bonded"; // on-chain postBond mirrors this in production
     order.bids = [bid];
+  } else if (action === "link-chain" && (order.status === "bonded" || order.status === "delivered" || order.status === "passed" || order.status === "failed")) {
+    const chainOrderId = String(body?.chainOrderId ?? "");
+    if (!/^\d+$/.test(chainOrderId)) {
+      return NextResponse.json({ error: "Provide the on-chain order id (e.g. 1)." }, { status: 400 });
+    }
+    order.chain = {
+      orderId: chainOrderId,
+      txs: { ...(order.chain?.txs ?? {}), ...(body?.createTx ? { create: String(body.createTx) } : {}) },
+    };
   } else {
     return NextResponse.json({ error: "Invalid action for this order state." }, { status: 409 });
   }

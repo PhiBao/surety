@@ -3,15 +3,38 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import type { StoredOrder } from "@/lib/store";
+import type { AcceptanceSpec, Row } from "@/lib/spec";
 
-const PASS_SAMPLE = JSON.stringify(
-  [
-    { name: "A. Tan", email: "a.tan@fintechone.sg", company: "FinTech One", source_url: "https://example.com", source_date: new Date().toISOString().slice(0, 10) },
-    { name: "B. Lim", email: "b.lim@paylabs.sg", company: "PayLabs", source_url: "https://example.com", source_date: new Date().toISOString().slice(0, 10) },
-  ],
-  null,
-  2,
-);
+/**
+ * Build a sample delivery that satisfies THIS spec (row count midpoint,
+ * required fields, resolvable URLs, well-formed emails, fresh dates).
+ * Used by the "Load PASS sample" button — no more 2-row mismatch.
+ */
+function buildPassSample(spec: AcceptanceSpec): Row[] {
+  const count = spec.assertions.find((a) => a.type === "rowCount");
+  const n =
+    count && count.type === "rowCount"
+      ? Math.min(count.max, Math.max(count.min, Math.round((count.min + count.max) / 2)))
+      : 5;
+  const today = new Date().toISOString().slice(0, 10);
+  const rows: Row[] = [];
+  for (let i = 1; i <= n; i++) {
+    rows.push({
+      name: `Sample Person ${i}`,
+      key: `sample-${i}`,
+      email: `surety.sample.${i}@gmail.com`, // gmail: real MX records, clearly a sample
+      company: `Example Company ${i}`,
+      claim: `Sample claim ${i}`,
+      field: "employees",
+      value: `${100 + i}`,
+      source_url: "https://example.com",
+      source_date: today,
+    });
+  }
+  return rows;
+}
+
+const FAIL_SAMPLE: Row[] = [{ name: "Nobody", email: "not-an-email", company: "X" }];
 
 export default function OrderPage() {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +43,7 @@ export default function OrderPage() {
   const [bid, setBid] = useState({ provider: "", price: "", bond: "" });
   const [deliveryText, setDeliveryText] = useState("");
   const [settleInfo, setSettleInfo] = useState("");
+  const [chainLink, setChainLink] = useState({ chainOrderId: "", createTx: "" });
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/orders/${id}`);
@@ -141,11 +165,11 @@ export default function OrderPage() {
         <section className="mt-4 rounded-xl border border-zinc-200 bg-white p-5">
           <h2 className="font-semibold">Submit delivery (JSON rows)</h2>
           <div className="mt-2 flex gap-2 text-sm">
-            <button onClick={() => setDeliveryText(PASS_SAMPLE)} className="rounded-lg border border-zinc-300 px-3 py-1.5">
-              Load PASS sample
+            <button onClick={() => order && setDeliveryText(JSON.stringify(buildPassSample(order.spec), null, 2))} className="rounded-lg border border-zinc-300 px-3 py-1.5">
+              Load PASS sample (matches this checklist)
             </button>
             <button
-              onClick={() => setDeliveryText(JSON.stringify([{ name: "Nobody", email: "not-an-email", company: "X" }], null, 2))}
+              onClick={() => setDeliveryText(JSON.stringify(FAIL_SAMPLE, null, 2))}
               className="rounded-lg border border-zinc-300 px-3 py-1.5"
             >
               Load FAIL sample
@@ -187,10 +211,21 @@ export default function OrderPage() {
             <a href={order.chain.settleUrl} target="_blank" rel="noreferrer" className="mt-3 inline-block text-sm font-semibold text-emerald-800 underline">
               View settlement on X Layer testnet ↗
             </a>
-          ) : (
+          ) : order.chain?.orderId ? (
             <button onClick={settleOnchain} className="mt-3 w-full rounded-xl bg-zinc-900 py-2.5 text-sm font-semibold text-white">
-              Settle verdict on-chain (X Layer testnet) →
+              Settle verdict on-chain (order #{order.chain.orderId}) →
             </button>
+          ) : (
+            <div className="mt-3 rounded-lg bg-white/60 p-3">
+              <p className="text-xs text-zinc-600">Link the on-chain order to enable settlement:</p>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <input value={chainLink.chainOrderId} onChange={(e) => setChainLink({ ...chainLink, chainOrderId: e.target.value })} placeholder="Chain order id (e.g. 2)" className="rounded-lg border border-zinc-300 p-2 text-sm" />
+                <input value={chainLink.createTx} onChange={(e) => setChainLink({ ...chainLink, createTx: e.target.value })} placeholder="Create tx hash (optional)" className="rounded-lg border border-zinc-300 p-2 text-sm" />
+                <button onClick={() => act("link-chain", chainLink)} className="col-span-2 rounded-lg bg-zinc-900 py-2 text-sm font-semibold text-white">
+                  Link on-chain order →
+                </button>
+              </div>
+            </div>
           )}
           {settleInfo && <p className="mt-2 font-mono text-xs text-emerald-800">{settleInfo}</p>}
         </section>

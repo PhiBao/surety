@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Surety app — buyer flow + evaluator + A2MCP endpoints
 
-## Getting Started
+Next.js + TypeScript. Guided flow, no dashboards:
+describe → frozen checklist → bonded bids → delivery → verdict receipt → on-chain settle.
 
-First, run the development server:
+## Run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+pnpm dev      # or: pnpm build && pnpm start -p 3207
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Deterministic core lives in `src/lib/`:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `spec.ts` — acceptance-spec model, canonical hashing, deterministic evaluation.
+  Infra failures yield `unverifiable` (human review), never auto-FAIL.
+- `compile.ts` — rule-based spec compiler (reproducible by design, no LLM on the
+  money path).
+- `net.ts` — shared URL (HEAD→GET fallback) and email (format + MX) evidence.
+- `chain.ts` — X Layer testnet wiring (escrow address, USDT0, explorer links).
+- `store.ts` — JSON-file order store. **Demo-grade persistence: use Postgres before
+  any real volume, and host with persistent disk (not serverless).**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## API
 
-## Learn More
+| Route | Purpose |
+|---|---|
+| `POST /api/specs/compile` | `{ jobText, jobKind }` → frozen spec + `specHash` |
+| `PATCH /api/orders/[id]` | `confirm-spec` · `bid` · `accept-bid` · `link-chain` |
+| `POST /api/orders/[id]/deliver` | `{ rows }` → deterministic verdict |
+| `POST /api/orders/[id]/settle` | adjudicates the **linked** on-chain order id |
+| `GET /api/v1/check/url?url=` | A2MCP **free** endpoint (listed trial path) |
+| `GET /api/v1/check/pro?url=` | A2MCP **paid** x402 endpoint ($0.01, exact, X Layer) |
 
-To learn more about Next.js, take a look at the following resources:
+## Env (server-side only, never `NEXT_PUBLIC_*`)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+ADJUDICATOR_KEY=0x…  # testnet adjudicator; rotates to evaluator service pre-mainnet
+OKX_API_KEY=… OKX_SECRET_KEY=… OKX_PASSPHRASE=…  # x402 facilitator (paid tier)
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Demo honesty
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+On-chain escrow/bond moves are real (X Layer testnet). The web flow is a
+**demo relay**: off-chain state transitions mirror on-chain ones. Mainnet path is
+direct wallet signing + `setAdjudicator` rotation to the evaluator service.

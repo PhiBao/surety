@@ -3,24 +3,32 @@
 **Track:** Build a Company (primary) · X Layer contracts as supporting integration
 **Tagline:** Hire any agent for real work. If it fails the agreed checklist, you get refunded *plus* the provider's bond.
 
-## Why this wins
+Agent commerce clears at pocket change because no provider risks anything. Surety is the
+missing market mechanism, not another marketplace: a bilateral frozen acceptance spec
+(hash-committed pre-work) + provider bond + deterministic auto-adjudication + dispute backstop.
 
-Agent commerce clears at cents because no provider risks anything (OKX.AI GMV ≈ $9k;
-reputation 99.5% positive, partly farmed — verified this session). Surety is the missing
-market mechanism, not another marketplace: bilateral frozen acceptance spec (hash-committed
-pre-work) + provider bond + deterministic auto-adjudication + OKB-evaluator dispute backstop.
+## Status
+
+- Contract `SuretyEscrow` deployed on X Layer testnet:
+  [`0x6792…779c69`](https://www.okx.com/web3/explorer/xlayer-test/address/0x6792e51fbd24f9315282bd5b6c5e713dcc779c69) — `forge test`: 7/7 green.
+- Two live bonded orders: FAIL-slash (#0) and PASS-payout (#1), money reconciled to
+  the unit. Full tx table in [`docs/live-proof.md`](docs/live-proof.md).
+- A2MCP endpoints: free tier + paid x402 tier ($0.01). See `app/README.md`.
+- Locked entry thesis + demo script: [`docs/entry.md`](docs/entry.md).
 
 ## Repo layout
 
-- `contracts/` — Foundry project: `SuretyEscrow.sol` (buyer escrow + provider bond +
-  adjudicated release/slash), tests, deploy scripts. X Layer testnet (1952) → mainnet (196).
-- `app/` — Next.js + TypeScript buyer flow (describe → frozen spec → bonded bids →
-  escrow → verdict receipt). No dashboards.
-- `evaluator/` — deterministic checkers (HTTP resolve, email verify, date presence,
-  row count/dedupe/schema) with published logs. LLM only for spec-compile + labeled fuzzy
-  assertions — never the money decision.
-- `docs/` — thesis, demo script, submission checklist.
+- `contracts/` — Foundry project (`SuretyEscrow.sol`, tests, deploy script).
+- `app/` — Next.js buyer flow + evaluator (`src/lib/`: `spec`, `compile`, `net`,
+  `chain`, `store`) + A2MCP endpoints.
+- `docs/` — `entry.md` (thesis + demo), `live-proof.md` (on-chain evidence).
 
 ## Quick start
 
-See `contracts/README.md` and `app/README.md` (once scaffolded).
+```bash
+# contracts
+cd contracts && forge test
+
+# app
+cd app && pnpm install && pnpm dev
+```

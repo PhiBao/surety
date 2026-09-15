@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { checkUrl } from "@/lib/net";
 
 /**
  * A2MCP service endpoint (free tier).
@@ -20,12 +21,7 @@ export async function GET(req: Request) {
   }
   const started = Date.now();
   try {
-    const res = await fetch(url, {
-      method: "HEAD",
-      redirect: "follow",
-      signal: AbortSignal.timeout(8000),
-      headers: { "user-agent": "surety-checker/1.0" },
-    });
+    const res = await checkUrl(url);
     return NextResponse.json({
       ok: res.ok,
       status: res.status,

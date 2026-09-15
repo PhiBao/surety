@@ -31,8 +31,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
   const key = process.env.ADJUDICATOR_KEY as Hex | undefined;
   if (!key) return NextResponse.json({ error: "Adjudicator not configured." }, { status: 503 });
-  const body = await req.json().catch(() => ({}));
-  const chainOrderId = BigInt(body.chainOrderId ?? 0);
+  // The on-chain order id comes from the explicit link step — never a default.
+  // (Link it first via PATCH { action: "link-chain", chainOrderId, createTx }.)
+  if (!order.chain?.orderId || !/^\d+$/.test(order.chain.orderId)) {
+    return NextResponse.json({ error: "Link the on-chain order first." }, { status: 409 });
+  }
+  const chainOrderId = BigInt(order.chain.orderId);
 
   const account = privateKeyToAccount(key);
   const wallet = createWalletClient({ account, chain: xlayerTestnet, transport: http() });

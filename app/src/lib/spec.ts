@@ -1,4 +1,5 @@
 import { keccak256, toHex } from "viem";
+import { checkEmail, checkUrl } from "./net";
 
 /**
  * Surety acceptance-spec model.
@@ -67,8 +68,6 @@ export function hashDelivery(bytes: Uint8Array | string): `0x${string}` {
   return keccak256(hex);
 }
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
 /**
  * Deterministic evaluation. Pure + small async I/O (HTTP HEAD/GET, DNS MX).
  * Rule: any infra failure yields `unverifiable: true`, NEVER a FAIL.
@@ -123,7 +122,7 @@ async function runAssertion(a: Assertion, rows: Row[]): Promise<AssertionResult>
       for (const r of sample) {
         const url = String(r[a.urlField] ?? "");
         try {
-          const res = await fetch(url, { method: "HEAD", redirect: "follow", signal: AbortSignal.timeout(8000) });
+          const res = await checkUrl(url);
           if (res.ok) ok++;
           else failures.push(`${url} → ${res.status}`);
         } catch (e) {
@@ -139,19 +138,38 @@ async function runAssertion(a: Assertion, rows: Row[]): Promise<AssertionResult>
       return {
         assertion: a,
         pass: failures.length === 0,
-        evidence: `${ok}/${sample.length} sampled URLs resolve (HTTP 200)${failures.length ? `: ${failures.slice(0, 3).join("; ")}` : ""}`,
+        evidence: `${ok}/${sample.length} sampled URLs resolve${failures.length ? `: ${failures.slice(0, 3).join("; ")}` : ""}`,
       };
     }
     case "emailPlausible": {
       const sample = sampleRows(rows, a.sampleSize);
-      const bad = sample.filter((r) => !EMAIL_RE.test(String(r[a.emailField] ?? "")));
+      const malformed: string[] = [];
+      let mxOk = 0;
+      for (const r of sample) {
+        const email = String(r[a.emailField] ?? "");
+        const c = await checkEmail(email);
+        if (!c.wellFormed) {
+          malformed.push(email);
+          continue;
+        }
+        if (c.mx === null) {
+          return {
+            assertion: a,
+            pass: false,
+            unverifiable: true,
+            evidence: `could not verify mail server for ${email}: DNS unreachable`,
+          };
+        }
+        if (c.mx) mxOk++;
+        else malformed.push(`${email} (no MX)`);
+      }
       return {
         assertion: a,
-        pass: bad.length === 0,
+        pass: malformed.length === 0,
         evidence:
-          bad.length === 0
-            ? `${sample.length}/${sample.length} sampled emails well-formed`
-            : `${bad.length}/${sample.length} sampled emails malformed`,
+          malformed.length === 0
+            ? `${mxOk}/${sample.length} sampled emails well-formed with live mail servers`
+            : `${malformed.length}/${sample.length} sampled emails fail (${malformed.slice(0, 3).join("; ")})`,
       };
     }
     case "datePresent": {
