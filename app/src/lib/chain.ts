@@ -10,8 +10,8 @@ export const XLAYER_TESTNET = {
   name: "X Layer Testnet",
   rpc: "https://xlayertestrpc.okx.com/terigon",
   explorer: "https://www.okx.com/web3/explorer/xlayer-test",
-  /** Paxos USDG on X Layer testnet (Paxos docs). */
-  usdg: "0xF0863D7A29a55d0c4263c11bFac754312ff078DF" as `0x${string}`,
+  /** Test USDG dispensed by the OKX faucet (verified on-chain: symbol/decimals). */
+  usdg: "0xA78E2BAABaF5C4F36B7FC394725dEb68D332eEC1" as `0x${string}`,
 } as const;
 
 export const ESCROW_ADDRESS = "0x6792e51fbd24f9315282bd5b6c5e713dcc779c69" as `0x${string}`;

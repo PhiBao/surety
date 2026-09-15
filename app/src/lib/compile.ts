@@ -48,9 +48,22 @@ export function compileSpec(jobText: string, jobKind: JobKind): AcceptanceSpec {
   };
 }
 
+const COUNT_UNITS =
+  "rows?|leads?|companies|contacts|records|items|entries|cfos?|ceos?|ctos?|founders?|developers?|profiles?|people|prospects|accounts|clients|customers";
+
 function extractCount(text: string): number | null {
-  const m = text.match(/(\d{1,5})\s*(rows?|leads?|companies|contacts|records|items|entries)/);
-  return m ? parseInt(m[1], 10) : null;
+  // Nearest number preceding a quantity noun ("5 fintech CFOs" → 5).
+  // Numbers followed by time words ("14 days") are ignored unless no
+  // quantity noun exists anywhere — recency is not a row count.
+  const unitRe = new RegExp(`\\b(?:${COUNT_UNITS})\\b`, "g");
+  let best: number | null = null;
+  let m: RegExpExecArray | null;
+  while ((m = unitRe.exec(text)) !== null) {
+    const before = text.slice(Math.max(0, m.index - 40), m.index);
+    const nums = [...before.matchAll(/(\d{1,5})/g)].map((n) => parseInt(n[1], 10));
+    if (nums.length > 0) best = nums[nums.length - 1];
+  }
+  return best;
 }
 
 function mentionsRecency(text: string): boolean {
