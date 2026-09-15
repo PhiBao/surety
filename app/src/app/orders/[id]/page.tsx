@@ -19,6 +19,7 @@ export default function OrderPage() {
   const [error, setError] = useState("");
   const [bid, setBid] = useState({ provider: "", price: "", bond: "" });
   const [deliveryText, setDeliveryText] = useState("");
+  const [settleInfo, setSettleInfo] = useState("");
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/orders/${id}`);
@@ -57,6 +58,20 @@ export default function OrderPage() {
     });
     const data = await res.json();
     if (!res.ok) setError(data.error ?? "Delivery failed.");
+    await load();
+  }
+
+  async function settleOnchain() {
+    setError("");
+    setSettleInfo("");
+    const res = await fetch(`/api/orders/${id}/settle`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    const data = await res.json();
+    if (!res.ok) setError(data.error ?? "Settle failed.");
+    else setSettleInfo(`Settled on X Layer testnet: ${data.url}`);
     await load();
   }
 
@@ -168,6 +183,16 @@ export default function OrderPage() {
           <p className="mt-3 font-mono text-xs text-zinc-500">
             delivery {order.delivery?.hash} · {order.verdict.at}
           </p>
+          {order.chain?.settleUrl ? (
+            <a href={order.chain.settleUrl} target="_blank" rel="noreferrer" className="mt-3 inline-block text-sm font-semibold text-emerald-800 underline">
+              View settlement on X Layer testnet ↗
+            </a>
+          ) : (
+            <button onClick={settleOnchain} className="mt-3 w-full rounded-xl bg-zinc-900 py-2.5 text-sm font-semibold text-white">
+              Settle verdict on-chain (X Layer testnet) →
+            </button>
+          )}
+          {settleInfo && <p className="mt-2 font-mono text-xs text-emerald-800">{settleInfo}</p>}
         </section>
       )}
 

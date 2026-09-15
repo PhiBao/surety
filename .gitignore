@@ -1,2 +1,8 @@
 .data/
 .next/
+.env
+.env.*
+!.env.example
+contracts/cache/
+contracts/out/
+contracts/lib/

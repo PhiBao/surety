@@ -41,7 +41,7 @@ export interface StoredOrder {
     at: string;
     logUri: string;
   };
-  chain?: { orderId: string; txs: Record<string, string> };
+  chain?: { orderId: string; txs: Record<string, string>; settleTx?: string; settleUrl?: string };
   createdAt: string;
 }
 
