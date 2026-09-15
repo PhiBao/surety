@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@okxweb3/x402-core':
+        specifier: ^0.1.0
+        version: 0.1.0
       next:
         specifier: 16.3.5
         version: 16.3.5(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -468,6 +471,9 @@ packages:
   '@nolyfill/is-core-module@1.0.39':
     resolution: {integrity: sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==}
     engines: {node: '>=12.4.0'}
+
+  '@okxweb3/x402-core@0.1.0':
+    resolution: {integrity: sha512-eXpZ51F3quf6GlDw/zwtBzirSCo9BRhdbWy4ipEoooyXE9VRpi/pRQgevKROyjNCPBAW/zpTZkqoUGfvtpyoTA==}
 
   '@rtsao/scc@1.1.0':
     resolution: {integrity: sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==}
@@ -2079,6 +2085,9 @@ packages:
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
 
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+
   zod@4.6.5:
     resolution: {integrity: sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==}
 
@@ -2463,6 +2472,10 @@ snapshots:
       fastq: 1.20.3
 
   '@nolyfill/is-core-module@1.0.39': {}
+
+  '@okxweb3/x402-core@0.1.0':
+    dependencies:
+      zod: 3.25.76
 
   '@rtsao/scc@1.1.0': {}
 
@@ -4322,5 +4335,7 @@ snapshots:
   zod-validation-error@4.0.2(zod@4.6.5):
     dependencies:
       zod: 4.6.5
+
+  zod@3.25.76: {}
 
   zod@4.6.5: {}

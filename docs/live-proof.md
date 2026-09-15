@@ -29,3 +29,12 @@ Evaluator: 6/6 checks green (5 rows in 4–6, schema, 0 dupes, emails, 5/5 URLs 
 Balance check: provider 0.20 → **4.08** (+3.00 +1.00 −0.12 fee). Buyer +0.12 fee received (5.92).
 
 Money reconciles to the unit on both paths. Demo uses these two orders.
+
+## Paid x402 tier — `/api/v1/check/pro` (verified 2026-09-15)
+
+- No payment → **HTTP 402 + PAYMENT-REQUIRED** (exact / `eip155:196` / USDT0
+  `0x779d…5736` / `10000` = $0.01 / treasury `0x4Ba1…1D73` / 300s). Challenge
+  matches the OKX A2MCP v2 envelope byte-for-byte in structure.
+- Facilitator keys validated live (`getSupported()` succeeded during the 402 path).
+- Verify → serve → settle executes against OKX hosted facilitator on the first
+  paid call; free tier at `/api/v1/check/url` stays the listed trial path.
