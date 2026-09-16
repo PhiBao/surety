@@ -1,0 +1,265 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadOnlyDiscovery",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeAvailabilityZones",
+        "ec2:DescribeAddresses",
+        "ec2:DescribeIamInstanceProfileAssociations",
+        "ec2:DescribeImages",
+        "ec2:DescribeInstances",
+        "ec2:DescribeInstanceStatus",
+        "ec2:DescribeInstanceTypes",
+        "ec2:DescribeKeyPairs",
+        "ec2:DescribeNetworkInterfaces",
+        "ec2:DescribeRegions",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeSnapshots",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeTags",
+        "ec2:DescribeVolumes",
+        "ec2:DescribeVpcs",
+        "ssm:DescribeInstanceInformation",
+        "ssm:DescribeInstanceProperties",
+        "ssm:DescribeSessions",
+        "ssm:GetCommandInvocation",
+        "ssm:GetDocument",
+        "ssm:ListCommands",
+        "ssm:ListCommandInvocations",
+        "sts:GetCallerIdentity",
+        "ce:GetCostAndUsage",
+        "budgets:ViewBudget",
+        "route53:ListHostedZones",
+        "route53:ListResourceRecordSets",
+        "route53:GetChange"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "InstanceLifecycle",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:RunInstances",
+        "ec2:StartInstances",
+        "ec2:StopInstances",
+        "ec2:RebootInstances",
+        "ec2:TerminateInstances",
+        "ec2:ModifyInstanceAttribute",
+        "ec2:ModifyInstanceMetadataOptions",
+        "ec2:AssociateIamInstanceProfile",
+        "ec2:CreateTags",
+        "ec2:DeleteTags"
+      ],
+      "Resource": [
+        "arn:aws:ec2:*:*:instance/*",
+        "arn:aws:ec2:*:*:volume/*",
+        "arn:aws:ec2:*:*:network-interface/*",
+        "arn:aws:ec2:*:*:security-group/*",
+        "arn:aws:ec2:*:*:subnet/*",
+        "arn:aws:ec2:*:*:key-pair/*",
+        "arn:aws:ec2:*::image/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "ap-southeast-1"
+        }
+      }
+    },
+    {
+      "Sid": "SecurityGroups",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateSecurityGroup",
+        "ec2:DeleteSecurityGroup",
+        "ec2:AuthorizeSecurityGroupIngress",
+        "ec2:AuthorizeSecurityGroupEgress",
+        "ec2:RevokeSecurityGroupIngress",
+        "ec2:RevokeSecurityGroupEgress"
+      ],
+      "Resource": [
+        "arn:aws:ec2:*:*:security-group/*",
+        "arn:aws:ec2:*:*:vpc/*",
+        "arn:aws:ec2:*:*:subnet/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "ap-southeast-1"
+        }
+      }
+    },
+    {
+      "Sid": "DataVolumesAndSnapshots",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateVolume",
+        "ec2:AttachVolume",
+        "ec2:DetachVolume",
+        "ec2:DeleteVolume",
+        "ec2:ModifyVolume",
+        "ec2:CreateSnapshot",
+        "ec2:DeleteSnapshot"
+      ],
+      "Resource": [
+        "arn:aws:ec2:*:*:volume/*",
+        "arn:aws:ec2:*:*:snapshot/*",
+        "arn:aws:ec2:*:*:instance/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "ap-southeast-1"
+        }
+      }
+    },
+    {
+      "Sid": "ElasticIps",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:AllocateAddress",
+        "ec2:AssociateAddress",
+        "ec2:DisassociateAddress",
+        "ec2:ReleaseAddress"
+      ],
+      "Resource": [
+        "arn:aws:ec2:*:*:elastic-ip/*",
+        "arn:aws:ec2:*:*:instance/*",
+        "arn:aws:ec2:*:*:network-interface/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "ap-southeast-1"
+        }
+      }
+    },
+    {
+      "Sid": "ShellAccessOverSsm",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:SendCommand",
+        "ssm:StartSession",
+        "ssm:TerminateSession",
+        "ssm:ResumeSession",
+        "ssm:CancelCommand"
+      ],
+      "Resource": [
+        "arn:aws:ec2:*:*:instance/*",
+        "arn:aws:ssm:*:*:document/AWS-RunShellScript",
+        "arn:aws:ssm:*:*:document/AWS-StartPortForwardingSession",
+        "arn:aws:ssm:*:*:document/SSM-SessionManagerRunShell",
+        "arn:aws:ssm:*:*:session/*"
+      ]
+    },
+    {
+      "Sid": "DnsRecordsOptional",
+      "Effect": "Allow",
+      "Action": [
+        "route53:ChangeResourceRecordSets"
+      ],
+      "Resource": "arn:aws:route53:::hostedzone/*"
+    },
+    {
+      "Sid": "CostGuardBudgets",
+      "Effect": "Allow",
+      "Action": [
+        "budgets:CreateBudget",
+        "budgets:ModifyBudget"
+      ],
+      "Resource": "arn:aws:budgets::*:budget/*"
+    },
+    {
+      "Sid": "PassOnlyProjectInstanceRole",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::<ACCOUNT_ID>:role/surety-*",
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": "ec2.amazonaws.com"
+        }
+      }
+    },
+    {
+      "Sid": "SelfCheckPolicySimulation",
+      "Effect": "Allow",
+      "Action": "iam:SimulatePrincipalPolicy",
+      "Resource": "arn:aws:iam::<ACCOUNT_ID>:user/surety-deploy"
+    },
+    {
+      "Sid": "GuardRails",
+      "Effect": "Deny",
+      "Action": [
+        "iam:CreateUser",
+        "iam:CreateAccessKey",
+        "iam:CreateLoginProfile",
+        "iam:UpdateLoginProfile",
+        "iam:UpdateAssumeRolePolicy",
+        "iam:CreatePolicyVersion",
+        "iam:SetDefaultPolicyVersion",
+        "iam:AttachUserPolicy",
+        "iam:PutUserPolicy",
+        "iam:AddUserToGroup",
+        "iam:CreateServiceSpecificCredential",
+        "organizations:*",
+        "account:*",
+        "sso:*",
+        "sso-admin:*",
+        "identitystore:*",
+        "cloudtrail:StopLogging",
+        "cloudtrail:DeleteTrail",
+        "cloudtrail:UpdateTrail",
+        "guardduty:DeleteDetector",
+        "guardduty:UpdateDetector",
+        "kms:ScheduleKeyDeletion",
+        "kms:DisableKey"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ProtectExistingNetwork",
+      "Effect": "Deny",
+      "Action": [
+        "ec2:DeleteVpc",
+        "ec2:DeleteSubnet",
+        "ec2:DeleteInternetGateway",
+        "ec2:DeleteRouteTable",
+        "ec2:DeleteRoute",
+        "ec2:DetachInternetGateway",
+        "ec2:DeleteNatGateway",
+        "ec2:ModifyVpcAttribute"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "NoAcceleratorInstances",
+      "Effect": "Deny",
+      "Action": "ec2:RunInstances",
+      "Resource": "arn:aws:ec2:*:*:instance/*",
+      "Condition": {
+        "StringLike": {
+          "ec2:InstanceType": [
+            "p*",
+            "g*",
+            "x*",
+            "trn*",
+            "inf*",
+            "dl*"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "OptionalDenyOtherSpend",
+      "Effect": "Deny",
+      "Action": [
+        "rds:*",
+        "elasticache:*",
+        "redshift:*",
+        "sagemaker:*",
+        "emr:*",
+        "eks:*",
+        "workspaces:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
