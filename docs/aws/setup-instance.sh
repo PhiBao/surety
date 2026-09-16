@@ -156,8 +156,11 @@ EOF
 fi
 
 systemctl daemon-reload
-systemctl enable -q --now surety
-systemctl enable -q --now caddy
+systemctl enable -q surety caddy
+# `enable --now` does NOT restart an already-running unit — without an explicit
+# restart the previous build keeps serving. Restart the app; reload Caddy.
+systemctl restart surety
+systemctl reload-or-restart caddy
 sleep 6
 echo "=== status ==="
 systemctl is-active surety caddy
