@@ -49,10 +49,29 @@ fi
 
 TMP_POLICY="$(mktemp)"
 sed "s/<ACCOUNT_ID>/$ACCOUNT_ID/g" "$POLICY_FILE" > "$TMP_POLICY"
-aws iam put-user-policy --user-name "$USER" \
-  --policy-name surety-deploy --policy-document "file://$TMP_POLICY"
+POLICY_ARN="arn:aws:iam::$ACCOUNT_ID:policy/surety-deploy"
+
+if aws iam get-policy --policy-arn "$POLICY_ARN" >/dev/null 2>&1; then
+  # keep only the newest version, then publish this one as default
+  for v in $(aws iam list-policy-versions --policy-arn "$POLICY_ARN" \
+             --query 'Versions[?IsDefaultVersion==`false`].VersionId' --output text); do
+    aws iam delete-policy-version --policy-arn "$POLICY_ARN" --version-id "$v"
+  done
+  aws iam create-policy-version --policy-arn "$POLICY_ARN" \
+    --policy-document "file://$TMP_POLICY" --set-as-default >/dev/null
+  echo "[=] managed policy updated"
+else
+  aws iam create-policy --policy-name surety-deploy \
+    --policy-document "file://$TMP_POLICY" \
+    --tags Key=project,Value=surety >/dev/null
+  echo "[+] managed policy created (4.7 KB, under the 6.1 KB limit)"
+fi
 rm -f "$TMP_POLICY"
-echo "[=] least-privilege policy attached (14 statements)"
+
+# clean up any earlier failed inline attempt, then attach the managed policy
+aws iam delete-user-policy --user-name "$USER" --policy-name surety-deploy 2>/dev/null || true
+aws iam attach-user-policy --user-name "$USER" --policy-arn "$POLICY_ARN"
+echo "[=] managed policy attached to $USER"
 
 # ---- 3. access key -> dedicated 'surety' CLI profile ------------------------
 if aws iam list-access-keys --user-name "$USER" --query 'AccessKeyMetadata[].AccessKeyId' --output text | grep -q .; then
