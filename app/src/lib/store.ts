@@ -45,7 +45,7 @@ export interface StoredOrder {
   createdAt: string;
 }
 
-const DATA_DIR = path.join(process.cwd(), ".data");
+const DATA_DIR = process.env.SURETY_DATA_DIR ?? path.join(process.cwd(), ".data");
 const DATA_FILE = path.join(DATA_DIR, "orders.json");
 
 async function readAll(): Promise<Record<string, StoredOrder>> {
