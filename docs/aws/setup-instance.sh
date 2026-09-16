@@ -114,6 +114,36 @@ ReadWritePaths=$DATADIR
 WantedBy=multi-user.target
 EOF
 
+# ---- caddy service unit (binary install has no unit of its own) ------------
+cat >/etc/systemd/system/caddy.service <<'EOF'
+[Unit]
+Description=Caddy web server
+Documentation=https://caddyserver.com/docs/
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+User=caddy
+Group=caddy
+Environment=HOME=/var/lib/caddy
+Environment=XDG_CONFIG_HOME=/var/lib/caddy/.config
+Environment=XDG_DATA_HOME=/var/lib/caddy/.local/share
+ExecStart=/usr/local/bin/caddy run --environ --config /etc/caddy/Caddyfile
+ExecReload=/usr/local/bin/caddy reload --config /etc/caddy/Caddyfile --force
+TimeoutStopSec=5s
+LimitNOFILE=1048576
+PrivateTmp=true
+ProtectSystem=full
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+chown -R caddy:caddy /etc/caddy /var/lib/caddy
+
 # ---- caddy (HTTP now; TLS added once the domain is set) --------------------
 if [[ ! -f /etc/caddy/Caddyfile ]]; then
   cat >/etc/caddy/Caddyfile <<'EOF'
