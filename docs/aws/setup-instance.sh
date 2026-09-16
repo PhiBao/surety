@@ -4,6 +4,7 @@
 # dedicated unprivileged user behind Caddy. Secrets come from /etc/surety/env
 # (created separately, root-owned 0600) — never from this script or the repo.
 set -euo pipefail
+export HOME="${HOME:-/root}"   # SSM runs with HOME unset; git/pnpm/caddy need it
 
 REPO="${REPO:-https://github.com/PhiBao/surety.git}"
 APPDIR=/srv/surety
@@ -59,13 +60,17 @@ id -u "$SVC_USER" >/dev/null 2>&1 || useradd --system --home "$APPDIR" --shell /
 mkdir -p "$DATADIR" "$APPDIR"
 
 # ---- code ------------------------------------------------------------------
-git config --global --add safe.directory "$APPDIR" 2>/dev/null || true
+# Code stays root-owned and only world-readable: the service user must never be
+# able to modify its own code, and root's git must not trip over ownership.
+git_safe() { git -c safe.directory="$APPDIR" -C "$APPDIR" "$@"; }
 if [[ -d "$APPDIR/.git" ]]; then
-  git -C "$APPDIR" fetch --depth 1 origin main -q && git -C "$APPDIR" reset --hard origin/main -q
-  echo "[=] repo updated to $(git -C "$APPDIR" rev-parse --short HEAD)"
+  git_safe fetch --depth 1 origin main -q
+  git_safe reset --hard origin/main -q
+  echo "[=] repo at $(git_safe rev-parse --short HEAD)"
 else
+  rm -rf "$APPDIR"
   git clone --depth 1 "$REPO" "$APPDIR" -q
-  echo "[+] repo cloned at $(git -C "$APPDIR" rev-parse --short HEAD)"
+  echo "[+] repo cloned at $(git -c safe.directory="$APPDIR" -C "$APPDIR" rev-parse --short HEAD)"
 fi
 
 # ---- build -----------------------------------------------------------------
@@ -85,7 +90,9 @@ echo "[=] pnpm $(pnpm -v) (repo pin $PNPM_PIN)"
 pnpm install --frozen-lockfile >/dev/null 2>&1 || pnpm install >/dev/null
 pnpm build 2>&1 | tail -4
 
-chown -R "$SVC_USER":"$SVC_USER" "$APPDIR" "$DATADIR"
+chown -R root:root "$APPDIR"
+chmod -R a+rX "$APPDIR"
+chown -R "$SVC_USER":"$SVC_USER" "$DATADIR"
 chmod 755 /srv /srv/surety
 
 # ---- app service -----------------------------------------------------------
