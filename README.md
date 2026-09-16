@@ -14,6 +14,8 @@ missing market mechanism, not another marketplace: a bilateral frozen acceptance
 - Two live bonded orders: FAIL-slash (#0) and PASS-payout (#1), money reconciled to
   the unit. Full tx table in [`docs/live-proof.md`](docs/live-proof.md).
 - A2MCP endpoints: free tier + paid x402 tier ($0.01). See `app/README.md`.
+- **Registered on OKX.AI as ASP `13770`** — [listing](https://www.okx.ai/agents/13770)
+  (under review), 3 services. See [`docs/okx-listing.md`](docs/okx-listing.md).
 - Locked entry thesis + demo script: [`docs/entry.md`](docs/entry.md).
 
 ## Repo layout
