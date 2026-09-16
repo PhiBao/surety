@@ -24,13 +24,21 @@ else
 fi
 
 # ---- packages --------------------------------------------------------------
-dnf install -y -q git tar gzip >/dev/null
+dnf install -y -q git tar gzip xz libatomic >/dev/null
+
+# Node 22 from the official tarball: AL2023 ships nodejs20 at most, and Next.js 16
+# wants >=20.9. Pinning the major version avoids distro-alternatives ambiguity.
 if ! command -v node >/dev/null 2>&1 || [[ "$(node -v 2>/dev/null)" != v22* ]]; then
-  dnf install -y -q nodejs22 npm >/dev/null 2>&1 || dnf install -y -q nodejs npm >/dev/null
+  BASE=https://nodejs.org/dist/latest-v22.x
+  FILE=$(curl -fsSL "$BASE/" | grep -oE 'node-v22\.[0-9.]+-linux-arm64\.tar\.xz' | head -1)
+  echo "[+] installing $FILE"
+  curl -fsSL "$BASE/$FILE" -o /tmp/node.tar.xz
+  tar -xJf /tmp/node.tar.xz -C /opt
+  rm -rf /opt/node22 && mv "/opt/${FILE%.tar.xz}" /opt/node22
+  for b in node npm npx; do ln -sf "/opt/node22/bin/$b" "/usr/local/bin/$b"; done
+  rm -f /tmp/node.tar.xz
 fi
-echo "[=] node $(node -v), npm $(npm -v)"
-command -v pnpm >/dev/null 2>&1 || npm install -g pnpm >/dev/null 2>&1
-echo "[=] pnpm $(pnpm -v)"
+echo "[=] node $(node -v) at $(command -v node), npm $(npm -v)"
 
 # ---- caddy (static arm64 binary, no repo needed) ---------------------------
 if ! command -v caddy >/dev/null 2>&1; then
@@ -61,6 +69,18 @@ fi
 
 # ---- build -----------------------------------------------------------------
 cd "$APPDIR/app"
+
+# pnpm pinned to the repo's packageManager field, so pnpm doesn't auto-fetch a
+# different binary from its store (that path needed extra shared libs on ARM).
+PNPM_PIN=$(sed -n 's/.*"packageManager": *"pnpm@\([^"]*\)".*/\1/p' package.json)
+PNPM_PIN=${PNPM_PIN:-11.1.1}
+if [[ "$(pnpm -v 2>/dev/null)" != "$PNPM_PIN" ]]; then
+  npm uninstall -g pnpm >/dev/null 2>&1 || true
+  npm install -g "pnpm@$PNPM_PIN" >/dev/null 2>&1
+  ln -sf /opt/node22/bin/pnpm /usr/local/bin/pnpm 2>/dev/null || true
+fi
+echo "[=] pnpm $(pnpm -v) (repo pin $PNPM_PIN)"
+
 pnpm install --frozen-lockfile >/dev/null 2>&1 || pnpm install >/dev/null
 pnpm build 2>&1 | tail -4
 
