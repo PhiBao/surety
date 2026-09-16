@@ -59,6 +59,7 @@ id -u "$SVC_USER" >/dev/null 2>&1 || useradd --system --home "$APPDIR" --shell /
 mkdir -p "$DATADIR" "$APPDIR"
 
 # ---- code ------------------------------------------------------------------
+git config --global --add safe.directory "$APPDIR" 2>/dev/null || true
 if [[ -d "$APPDIR/.git" ]]; then
   git -C "$APPDIR" fetch --depth 1 origin main -q && git -C "$APPDIR" reset --hard origin/main -q
   echo "[=] repo updated to $(git -C "$APPDIR" rev-parse --short HEAD)"
