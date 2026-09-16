@@ -47,7 +47,24 @@ function getFacilitator(): Promise<Facilitator | null> {
   return facilitatorPromise;
 }
 
-function requirements(url: string) {
+/**
+ * Public base URL for the resource descriptor. Behind Caddy, Next sees the
+ * proxied request (localhost:3207), which must never leak into the challenge —
+ * a buyer paying against "localhost" is nonsense. Prefer an explicit
+ * PUBLIC_BASE_URL; otherwise trust the proxy's forwarded headers.
+ */
+function publicBaseUrl(req: NextRequest): string {
+  const configured = process.env.PUBLIC_BASE_URL?.replace(/\/+$/, "");
+  if (configured) return configured;
+  const proto = req.headers.get("x-forwarded-proto")?.split(",")[0].trim() ?? "http";
+  const host =
+    req.headers.get("x-forwarded-host")?.split(",")[0].trim() ??
+    req.headers.get("host") ??
+    "localhost";
+  return `${proto}://${host}`;
+}
+
+function requirements(resourceUrl: string) {
   return {
     scheme: "exact",
     network: NETWORK,
@@ -56,16 +73,20 @@ function requirements(url: string) {
     payTo: PAY_TO,
     maxTimeoutSeconds: MAX_TIMEOUT,
     extra: { name: "USD₮0", version: "1" },
-    resource: url,
+    resource: resourceUrl,
     description: "Surety URL verification — paid tier",
     mimeType: "application/json",
   };
 }
 
-function challenge(url: string) {
+function challenge(resourceUrl: string) {
   return {
     x402Version: 2,
-    resource: { url, description: "Surety URL verification — paid tier", mimeType: "application/json" },
+    resource: {
+      url: resourceUrl,
+      description: "Surety URL verification — paid tier",
+      mimeType: "application/json",
+    },
     accepts: [
       {
         scheme: "exact",
@@ -102,10 +123,11 @@ export async function GET(req: NextRequest) {
   if (!/^https?:\/\//.test(target)) {
     return NextResponse.json({ error: "Provide ?url=https://…" }, { status: 400 });
   }
+  const resourceUrl = `${publicBaseUrl(req)}/api/v1/check/pro?url=${encodeURIComponent(target)}`;
 
   const sig = req.headers.get("payment-signature");
   if (!sig) {
-    const encoded = Buffer.from(JSON.stringify(challenge(req.url))).toString("base64");
+    const encoded = Buffer.from(JSON.stringify(challenge(resourceUrl))).toString("base64");
     return new NextResponse(JSON.stringify({ x402Version: 2, error: "Payment required" }), {
       status: 402,
       headers: { "content-type": "application/json", "PAYMENT-REQUIRED": encoded },
@@ -119,7 +141,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Malformed PAYMENT-SIGNATURE." }, { status: 400 });
   }
 
-  const reqs = requirements(req.url);
+  const reqs = requirements(resourceUrl);
   let verification: { isValid?: boolean; invalidReason?: string };
   try {
     verification = await facilitator.verify(payload, reqs);
