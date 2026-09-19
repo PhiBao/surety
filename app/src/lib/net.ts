@@ -48,8 +48,23 @@ export async function checkEmail(email: string): Promise<EmailCheck> {
   try {
     const mx = await dns.resolveMx(domain);
     return { wellFormed, mx: mx.length > 0 };
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (e) {
+    const code = (e as NodeJS.ErrnoException).code ?? "";
+    // ENOTFOUND / NXDOMAIN: the domain does not exist. That is positive
+    // evidence of a bad address, not an infrastructure failure.
+    if (code === "ENOTFOUND" || code === "NXDOMAIN") return { wellFormed, mx: false };
+    // ENODATA: domain exists but publishes no MX. Per RFC 5321 mail falls back
+    // to the A record, so only fail when there is no address record either.
+    if (code === "ENODATA") {
+      try {
+        const a = await dns.resolve4(domain);
+        return { wellFormed, mx: a.length > 0 };
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch {
+        return { wellFormed, mx: false };
+      }
+    }
+    // Genuinely transient (SERVFAIL, timeouts, refused): do not imply bad data.
     return { wellFormed, mx: null };
   }
 }
