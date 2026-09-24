@@ -16,9 +16,20 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  const MIN_LEN = 20;
+  const remaining = Math.max(0, MIN_LEN - jobText.trim().length);
+  const ready = remaining === 0;
+
   async function submit() {
-    setBusy(true);
+    if (busy) return;
     setError("");
+    if (!ready) {
+      setError(
+        `Please describe the job in a full sentence — ${remaining} more character${remaining === 1 ? "" : "s"} needed.`,
+      );
+      return;
+    }
+    setBusy(true);
     const res = await fetch("/api/specs/compile", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -34,7 +45,7 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
+    <main className="mx-auto max-w-2xl bg-white px-6 py-16 text-zinc-900">
       <p className="text-sm font-medium uppercase tracking-widest text-emerald-700">Surety</p>
       <h1 className="mt-3 text-4xl font-bold leading-tight">
         Hire any agent. <span className="text-emerald-700">Backed by their money.</span>
@@ -46,34 +57,60 @@ export default function Home() {
       </p>
 
       <div className="mt-8 grid gap-3 sm:grid-cols-3">
-        {KINDS.map((k) => (
-          <button
-            key={k.id}
-            onClick={() => setJobKind(k.id)}
-            className={`rounded-xl border p-4 text-left transition ${
-              jobKind === k.id
-                ? "border-emerald-600 bg-emerald-50 ring-1 ring-emerald-600"
-                : "border-zinc-200 bg-white hover:border-zinc-400"
-            }`}
-          >
-            <div className="font-semibold">{k.title}</div>
-            <div className="mt-1 text-sm text-zinc-500">{k.desc}</div>
-          </button>
-        ))}
+        {KINDS.map((k) => {
+          const selected = jobKind === k.id;
+          return (
+            <button
+              key={k.id}
+              onClick={() => setJobKind(k.id)}
+              aria-pressed={selected}
+              className={`rounded-xl border-2 p-4 text-left transition ${
+                selected
+                  ? "border-emerald-700 bg-emerald-50 shadow-sm"
+                  : "border-zinc-300 bg-white hover:border-zinc-500"
+              }`}
+            >
+              <div
+                className={`flex items-center gap-2 font-semibold ${
+                  selected ? "text-emerald-950" : "text-zinc-900"
+                }`}
+              >
+                {selected && (
+                  <span
+                    aria-hidden
+                    className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-xs font-bold text-white"
+                  >
+                    ✓
+                  </span>
+                )}
+                {k.title}
+              </div>
+              <div className={`mt-1 text-sm ${selected ? "text-emerald-900" : "text-zinc-600"}`}>
+                {k.desc}
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       <textarea
         value={jobText}
         onChange={(e) => setJobText(e.target.value)}
         rows={4}
+        aria-label="Describe the job"
         placeholder='e.g. "50 fintech CFOs in Singapore with verified work emails and a funding-news link from the last 14 days"'
-        className="mt-4 w-full rounded-xl border border-zinc-300 p-4 text-base focus:border-emerald-600 focus:outline-none"
+        className="mt-4 w-full rounded-xl border border-zinc-300 bg-white p-4 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-emerald-600 focus:outline-none"
       />
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      <p className="mt-2 text-sm text-zinc-600" aria-live="polite">
+        {ready
+          ? "Ready — a full sentence lets the checklist capture row counts and dates."
+          : `Describe in a full sentence — ${remaining} more character${remaining === 1 ? "" : "s"} to unlock.`}
+      </p>
+      {error && <p className="mt-2 text-sm font-medium text-red-700">{error}</p>}
       <button
         onClick={submit}
-        disabled={busy || jobText.trim().length < 20}
-        className="mt-4 w-full rounded-xl bg-zinc-900 py-3 text-base font-semibold text-white disabled:opacity-40"
+        disabled={busy}
+        className="mt-4 w-full rounded-xl bg-zinc-900 py-3 text-base font-semibold text-white disabled:opacity-70"
       >
         {busy ? "Freezing your checklist…" : "Freeze my checklist →"}
       </button>

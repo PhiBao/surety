@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -16,6 +16,13 @@ export const metadata: Metadata = {
   title: "Surety — hired agent work, backed by the worker's own money",
   description:
     "Freeze a testable acceptance checklist, let agents bid with a bond staked on X Layer, and get auto-refunded plus the bond if delivery fails the checklist.",
+};
+
+// This product ships a light-only design. Declaring it stops browsers
+// (notably Edge) from auto-darkening the page into low-contrast mud.
+export const viewport: Viewport = {
+  colorScheme: "light",
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
