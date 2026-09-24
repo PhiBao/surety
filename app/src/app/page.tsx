@@ -45,12 +45,12 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl bg-white px-6 py-16 text-zinc-900">
-      <p className="text-sm font-medium uppercase tracking-widest text-emerald-700">Surety</p>
-      <h1 className="mt-3 text-4xl font-bold leading-tight">
-        Hire any agent. <span className="text-emerald-700">Backed by their money.</span>
+    <main className="mx-auto max-w-2xl bg-zinc-950 px-6 py-16 text-zinc-100">
+      <p className="text-sm font-medium uppercase tracking-widest text-emerald-400">Surety</p>
+      <h1 className="mt-3 text-4xl font-bold leading-tight text-white">
+        Hire any agent. <span className="text-emerald-400">Backed by their money.</span>
       </h1>
-      <p className="mt-4 text-lg text-zinc-600">
+      <p className="mt-4 text-lg text-zinc-400">
         Describe the job. We freeze a testable checklist before work starts, the agent posts a
         bond on X Layer, and delivery is auto-checked. Fail the checklist and you&apos;re
         refunded — plus the bond.
@@ -66,26 +66,22 @@ export default function Home() {
               aria-pressed={selected}
               className={`rounded-xl border-2 p-4 text-left transition ${
                 selected
-                  ? "border-emerald-700 bg-emerald-50 shadow-sm"
-                  : "border-zinc-300 bg-white hover:border-zinc-500"
+                  ? "border-emerald-400 bg-emerald-950 shadow-[0_0_28px_rgba(16,185,129,0.18)]"
+                  : "border-zinc-800 bg-zinc-900 hover:border-zinc-500"
               }`}
             >
-              <div
-                className={`flex items-center gap-2 font-semibold ${
-                  selected ? "text-emerald-950" : "text-zinc-900"
-                }`}
-              >
+              <div className="flex items-center gap-2 font-semibold text-white">
                 {selected && (
                   <span
                     aria-hidden
-                    className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-xs font-bold text-white"
+                    className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-400 text-xs font-bold text-zinc-950"
                   >
                     ✓
                   </span>
                 )}
                 {k.title}
               </div>
-              <div className={`mt-1 text-sm ${selected ? "text-emerald-900" : "text-zinc-600"}`}>
+              <div className={`mt-1 text-sm ${selected ? "text-emerald-100/80" : "text-zinc-400"}`}>
                 {k.desc}
               </div>
             </button>
@@ -99,18 +95,18 @@ export default function Home() {
         rows={4}
         aria-label="Describe the job"
         placeholder='e.g. "50 fintech CFOs in Singapore with verified work emails and a funding-news link from the last 14 days"'
-        className="mt-4 w-full rounded-xl border border-zinc-300 bg-white p-4 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-emerald-600 focus:outline-none"
+        className="mt-4 w-full rounded-xl border border-zinc-700 bg-zinc-900 p-4 text-base text-zinc-100 placeholder:text-zinc-500 focus:border-emerald-400 focus:outline-none"
       />
-      <p className="mt-2 text-sm text-zinc-600" aria-live="polite">
+      <p className="mt-2 text-sm text-zinc-400" aria-live="polite">
         {ready
           ? "Ready — a full sentence lets the checklist capture row counts and dates."
           : `Describe in a full sentence — ${remaining} more character${remaining === 1 ? "" : "s"} to unlock.`}
       </p>
-      {error && <p className="mt-2 text-sm font-medium text-red-700">{error}</p>}
+      {error && <p className="mt-2 text-sm font-medium text-red-400">{error}</p>}
       <button
         onClick={submit}
         disabled={busy}
-        className="mt-4 w-full rounded-xl bg-zinc-900 py-3 text-base font-semibold text-white disabled:opacity-70"
+        className="mt-4 w-full rounded-xl bg-emerald-400 py-3 text-base font-semibold text-zinc-950 hover:bg-emerald-300 disabled:opacity-70"
       >
         {busy ? "Freezing your checklist…" : "Freeze my checklist →"}
       </button>

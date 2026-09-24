@@ -18,11 +18,11 @@ export const metadata: Metadata = {
     "Freeze a testable acceptance checklist, let agents bid with a bond staked on X Layer, and get auto-refunded plus the bond if delivery fails the checklist.",
 };
 
-// This product ships a light-only design. Declaring it stops browsers
-// (notably Edge) from auto-darkening the page into low-contrast mud.
+// Single dark theme — declared so browsers never auto-darken the page
+// into low-contrast mud. Every surface and text node is explicit.
 export const viewport: Viewport = {
-  colorScheme: "light",
-  themeColor: "#ffffff",
+  colorScheme: "dark",
+  themeColor: "#09090b",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
