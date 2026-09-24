@@ -191,6 +191,104 @@ Nobody bonds the provider. That is the whole product.
 
 ## Architecture
 
+### System — what is ours vs. what is OKX
+
+Trust crosses exactly one boundary: money and the frozen spec live in the on-chain
+contract; everything else is our off-chain orchestration. The evaluator can report a
+verdict but can never move funds alone — settlement is enforced by the contract's state
+machine.
+
+```mermaid
+flowchart TB
+  subgraph users[" "]
+    direction LR
+    B["Buyer"]
+    P["Provider / ASP"]
+  end
+
+  subgraph app["Surety app — Next.js · TypeScript"]
+    CMP["Spec compiler<br/>plain words → testable assertions"]
+    HC["Canonical JSON → keccak256<br/>frozen specHash"]
+    EVAL["Deterministic evaluator<br/>HTTP · MX · schema · dedupe · dates"]
+    API["Order API + A2MCP endpoints"]
+  end
+
+  subgraph xl["X Layer — chain 196 / 1952"]
+    SC["SuretyEscrow.sol<br/>price escrow + provider bond<br/>one-shot adjudication + dispute"]
+  end
+
+  subgraph okx["OKX ecosystem"]
+    FAC["x402 facilitator<br/>verify + settle"]
+    LST["OKX.AI · ASP 13770<br/>A2A + A2MCP listing"]
+    JURY["OKB-staked evaluators<br/>dispute backstop"]
+  end
+
+  B -->|describe job| CMP --> HC
+  HC -->|commit specHash pre-work| SC
+  B --> API
+  P -->|deliver bytes| EVAL --> SC
+  SC -->|adjudicate pass| FAC
+  SC -.->|exception path only| JURY
+  API -.->|A2MCP paid call| FAC
+  LST --> API
+```
+
+### Order lifecycle — the two money paths
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant B as Buyer
+  participant A as Surety app
+  participant C as SuretyEscrow
+  participant P as Provider
+  participant J as OKB evaluators
+
+  B->>A: describe the job in plain words
+  A->>A: compile testable assertions
+  A-->>B: frozen checklist + specHash
+  P-->>A: bid price + bond
+  B->>C: createOrder specHash + escrow price
+  P->>C: postBond lock provider money
+  C-->>P: state Bonded
+  P->>A: submit delivery rows
+  A->>A: run deterministic checks + publish log
+  A->>C: adjudicate pass or fail
+  alt PASS
+    C->>P: price + bond − fee
+  else FAIL
+    C->>B: price refunded + provider bond paid out
+  else disputed within window
+    A->>J: escalate
+    J->>C: resolveDispute final verdict
+  end
+```
+
+### Escrow + bond state machine
+
+Contract source of truth (`enum State`). A terminal `Resolved` is reached only through an
+adjudicated verdict, a no-show slash, or a resolved dispute — never silently.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Created: buyer funds price
+  Created --> Bonded: provider posts bond
+  Created --> Refunded: no bond by deadline
+  Bonded --> Delivered: submitDelivery
+  Bonded --> Resolved: no-show slash
+  Delivered --> Passed: adjudicate true
+  Delivered --> Failed: adjudicate false
+  Passed --> Resolved: settle after dispute window
+  Failed --> Resolved: settle after dispute window
+  Passed --> Disputed: raiseDispute
+  Failed --> Disputed: raiseDispute
+  Disputed --> Resolved: resolveDispute
+  Resolved --> [*]
+  Refunded --> [*]
+```
+
+### Repository
+
 ```
 surety/
 ├── contracts/            Foundry — SuretyEscrow.sol + tests + deploy script
@@ -213,7 +311,7 @@ tooling, evaluator, and UI); Foundry for tests that assert exact token math; no 
 on the money-moving path; no token — bonds are USDT0, because a token would add nothing the
 stake doesn't already do.
 
-**Endpoints**
+### Endpoints
 
 | Route | Purpose |
 |---|---|
